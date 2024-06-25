@@ -19,15 +19,21 @@ class HBNBCommand(cmd.Cmd):
     prompt = '(hbnb) ' if sys.__stdin__.isatty() else ''
 
     classes = {
-               'BaseModel': BaseModel, 'User': User, 'Place': Place,
-               'State': State, 'City': City, 'Amenity': Amenity,
+               'BaseModel': BaseModel,
+               'User': User, 'Place': Place,
+               'State': State,
+               'City': City,
+               'Amenity': Amenity,
                'Review': Review
               }
     dot_cmds = ['all', 'count', 'show', 'destroy', 'update']
     types = {
-             'number_rooms': int, 'number_bathrooms': int,
-             'max_guest': int, 'price_by_night': int,
-             'latitude': float, 'longitude': float
+             'number_rooms': int,
+             'number_bathrooms': int,
+             'max_guest': int,
+             'price_by_night': int,
+             'latitude': float,
+             'longitude': float
             }
 
     def preloop(self):
@@ -73,8 +79,8 @@ class HBNBCommand(cmd.Cmd):
                 pline = pline[2].strip()  # pline is now str
                 if pline:
                     # check for *args or **kwargs
-                    if pline[0] is '{' and pline[-1] is'}'\
-                            and type(eval(pline)) is dict:
+                    if pline[0] == '{' and pline[-1] =='}'\
+                            and isinstance(eval(pline), dict):
                         _args = pline
                     else:
                         _args = pline.replace(',', '')
@@ -113,18 +119,77 @@ class HBNBCommand(cmd.Cmd):
         """ Overrides the emptyline method of CMD """
         pass
 
-    def do_create(self, args):
-        """ Create an object of any class"""
-        if not args:
+    def strvalue(self, value):
+        """converts a given value into a string
+        Args
+            value: a given value
+        Return
+            A new string
+        """
+        new_str = value[1:-1]
+        _str = ""
+
+        for c in new_str:
+            if c == '"':
+                c = "\\\""
+            if c == "_":
+                c = c.replace("_", " ")
+            _str += c
+        return _str
+
+    def intvalue(self, value):
+        """Converts a string into an integer
+        Args
+            value: value
+        Return
+            The number or 0
+        """
+        return int(value)
+
+    def floatvalue(self, value):
+        """Converts a cmd arg into a float
+        Args
+            value: the cmd arg
+        Return
+            The resulted floating number or 0.0  
+        """
+        return float(value)
+
+    def do_create(self, arg):
+        """ Creates an object of any existing model with given attributes"""
+
+        # Do nothing if no argument is provided
+        if not arg:
             print("** class name missing **")
             return
-        elif args not in HBNBCommand.classes:
+        # check the existence of provided class
+        cmds = arg.split(" ")
+        cmdlen = len(cmds)
+        clsname = cmds[0]
+        if clsname not in HBNBCommand.classes:
             print("** class doesn't exist **")
             return
-        new_instance = HBNBCommand.classes[args]()
+        # Create an instance of the provided class
+        new_instance = HBNBCommand.classes[clsname]()
+        # Setting attributes
+        i = 1
+        while i < cmdlen:
+            cmd_p = cmds[i].split('=')
+            key = cmd_p[0]
+            value = cmd_p[1]
+            if value.startswith("\""):
+                setattr(new_instance, key, self.strvalue(value))
+            else:
+                if value.find(".") != -1:
+                    setattr(new_instance, key, self.floatvalue(value))
+                else:
+                    setattr(new_instance, key, self.intvalue(value))
+            i += 1
+        print(new_instance)
+        # Save the new instance to the file storage
         storage.save()
+        # Print new instance id
         print(new_instance.id)
-        storage.save()
 
     def help_create(self):
         """ Help information for the create method """
@@ -187,7 +252,7 @@ class HBNBCommand(cmd.Cmd):
         key = c_name + "." + c_id
 
         try:
-            del(storage.all()[key])
+            del storage.all()[key]
             storage.save()
         except KeyError:
             print("** no instance found **")
@@ -229,7 +294,7 @@ class HBNBCommand(cmd.Cmd):
         print(count)
 
     def help_count(self):
-        """ """
+        """ Prints the help documentation for count"""
         print("Usage: count <class_name>")
 
     def do_update(self, args):
@@ -272,7 +337,7 @@ class HBNBCommand(cmd.Cmd):
                 args.append(v)
         else:  # isolate args
             args = args[2]
-            if args and args[0] is '\"':  # check for quoted arg
+            if args and args[0] == '\"':  # check for quoted arg
                 second_quote = args.find('\"', 1)
                 att_name = args[1:second_quote]
                 args = args[second_quote + 1:]
@@ -280,10 +345,10 @@ class HBNBCommand(cmd.Cmd):
             args = args.partition(' ')
 
             # if att_name was not quoted arg
-            if not att_name and args[0] is not ' ':
+            if not att_name and args[0] != ' ':
                 att_name = args[0]
             # check for quoted val arg
-            if args[2] and args[2][0] is '\"':
+            if args[2] and args[2][0] == '\"':
                 att_val = args[2][1:args[2].find('\"', 1)]
 
             # if att_val was not quoted arg
@@ -298,7 +363,7 @@ class HBNBCommand(cmd.Cmd):
         # iterate through attr names and values
         for i, att_name in enumerate(args):
             # block only runs on even iterations
-            if (i % 2 == 0):
+            if i % 2 == 0:
                 att_val = args[i + 1]  # following item is value
                 if not att_name:  # check for att_name
                     print("** attribute name missing **")
