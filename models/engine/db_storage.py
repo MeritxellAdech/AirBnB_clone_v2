@@ -18,7 +18,7 @@ class DBStorage:
         db = getenv("HBNB_MYSQL_DB")
         url = f"mysql+mysqldb://{user}:{passw}@{host}/{db}"
         # Create the engine
-        self.__engine = create_engine(url, pool_pre_ping=True, echo=True)
+        self.__engine = create_engine(url, pool_pre_ping=True)
         # Check if environment = test
         if getenv("HBNB_ENV ") == "test":
             from models.base_model import Base
@@ -34,15 +34,20 @@ class DBStorage:
         Return
             a dictionary"""
 
+        objects = {}
+        all_models = [cls]
         if cls is None:
             # if no class is provided, return all objects from all classes
-            return self.__session.query(cls).all()
+            from console import HBNBCommand
+            from models.base_model import BaseModel
+            cls_values = HBNBCommand.classes.values()
+            all_models = [i for i in cls_values if i != BaseModel]
 
         # When a class is provided, return all objects from it
-        query_obj = self.__session.query(cls).all()
-        objects = {}
-        for obj in query_obj:
-            objects[obj.id] = obj
+        for model in all_models:
+            query_obj = self.__session.query(model).all()
+            for obj in query_obj:
+                objects[f"{cls.__name__}.{obj.id}"] = obj
         return objects
 
     def new(self, obj):
