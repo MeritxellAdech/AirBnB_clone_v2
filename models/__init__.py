@@ -1,6 +1,6 @@
+#!/usr/bin/python3
 """This file will handle the conditional import and instantiation
 based on the HBNB_TYPE_STORAGE environment variable"""
-#!/usr/bin/python3
 from os import getenv
 
 # Check the value of the environment variable
@@ -13,4 +13,3 @@ else:
     from models.engine.file_storage import FileStorage
     storage = FileStorage()
     storage.reload()
-
